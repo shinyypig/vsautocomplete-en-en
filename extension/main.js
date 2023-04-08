@@ -143,14 +143,24 @@ function activate(context) {
                     // keyword = beforeText;
                     let items = searchHintCompletionItems(keyword.toLowerCase());
 
-                    if (keyword[0].toUpperCase() == keyword[0]) {
-                        if (items.length > 0) {
+                    if (items.length > 0) {
+                        if (keyword[0].toUpperCase() == keyword[0]) {
                             for (let i = 0; i < items.length; i++) {
                                 // 获取元素的 label 属性
                                 let str = items[i].label;
                                 // console.log(items[i])
                                 // 将首字母转换为大写
                                 str = str.replace(str[0], str[0].toUpperCase());
+                                // 更新数组中的元素
+                                items[i].label = str;
+                            }
+                        } else {
+                            for (let i = 0; i < items.length; i++) {
+                                // 获取元素的 label 属性
+                                let str = items[i].label;
+                                // console.log(items[i])
+                                // 将首字母转换为小写
+                                str = str.replace(str[0], str[0].toLowerCase());
                                 // 更新数组中的元素
                                 items[i].label = str;
                             }
