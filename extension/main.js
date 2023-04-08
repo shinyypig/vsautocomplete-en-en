@@ -103,6 +103,27 @@ function findHintFunctionItem(wordname) {
     return item.length ? item[0] : null;
 }
 
+function isMathEnvironment(editor) {
+    let text = editor.document.getText(new vscode.Range(new vscode.Position(0, 0), editor.selection.start))
+    text = text.replace(/\\\$/g, ' ')
+    text = text.replace(/```[\s\S]+?```/g, '')
+    text = text.replace(/`[^`\n]+`/g, '')
+    text = text.replace(/<!--[\s\S]+?-->/g, '')
+    const reg = /(\\begin\{align\*\}[^\$]*?\\end\{align\*\})|(\\begin\{align\}[^\$]*?\\end\{align\})|(\\begin\{equation\*\}[^\$]*?\\end\{equation\*\})|(\\begin\{equation\}[^\$]*?\\end\{equation\})|(\\\[[^\$]*?\\\])|(\\\([^\$]*?\\\))|(\$\$[^\$]+\$\$)|(\$[^\$]+?\$)/g
+    text = text.replace(reg, '')
+    if (text.indexOf('$') == -1 && text.indexOf('\\(') == -1 && text.indexOf('\\[') == -1 && text.indexOf('\\begin{equation}') == -1 && text.indexOf('\\begin{equation*}') == -1 && text.indexOf('\\begin{align}') == -1 && text.indexOf('\\begin{align*}') == -1) {
+        return false
+    } else {
+        const txt_reg = /(\\text{[^}]+})|(\\operatorname{[^}\n]+})|(\\mathrm{[^}\n]+})/g
+        text = text.replace(txt_reg, ' ')
+        if (text.indexOf('\\text{') == -1 && text.indexOf('\\operatorname{') == -1 && text.indexOf('\\mathrm{') == -1) {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 function activate(context) {
     var subscriptions = context.subscriptions;
     loadHintData();
@@ -110,30 +131,34 @@ function activate(context) {
     subscriptions.push(
         vscode.languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, {
             provideCompletionItems: (document, position/*, token*/) => {
-                let beforeText = getTextBeforeCursor(document, position);
-                // console.log(beforeText)
-                // beforeText = beforeText.toLowerCase()
-                if (isCursorInTheString(beforeText)) return [];
-                let keyword = (beforeText.match(/^.*?\b(\w*)$/) || ['', ''])[1];
-                // console.log(keyword)
-                if (!keyword) return wordCompletionItems;
-                // keyword = beforeText;
-                let items = searchHintCompletionItems(keyword.toLowerCase());
+                let editor = vscode.window.activeTextEditor;
+                if (editor && !isMathEnvironment(editor)) {
+                    let beforeText = getTextBeforeCursor(document, position);
+                    // console.log(beforeText)
+                    // beforeText = beforeText.toLowerCase()
+                    if (isCursorInTheString(beforeText)) return [];
+                    let keyword = (beforeText.match(/^.*?\b(\w*)$/) || ['', ''])[1];
+                    // console.log(keyword)
+                    if (!keyword) return wordCompletionItems;
+                    // keyword = beforeText;
+                    let items = searchHintCompletionItems(keyword.toLowerCase());
 
-                if (keyword[0].toUpperCase() == keyword[0]) {
-                    if (items.length > 0) {
-                        for (let i = 0; i < items.length; i++) {
-                            // 获取元素的 label 属性
-                            let str = items[i].label;
-                            // console.log(items[i])
-                            // 将首字母转换为大写
-                            str = str.replace(str[0], str[0].toUpperCase());
-                            // 更新数组中的元素
-                            items[i].label = str;
+                    if (keyword[0].toUpperCase() == keyword[0]) {
+                        if (items.length > 0) {
+                            for (let i = 0; i < items.length; i++) {
+                                // 获取元素的 label 属性
+                                let str = items[i].label;
+                                // console.log(items[i])
+                                // 将首字母转换为大写
+                                str = str.replace(str[0], str[0].toUpperCase());
+                                // 更新数组中的元素
+                                items[i].label = str;
+                            }
                         }
                     }
+                    return items;
                 }
-                return items;
+                return [];
             },
             resolveCompletionItem: (item/*, token*/) => item
         }
